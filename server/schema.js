@@ -1,6 +1,5 @@
 import * as _ from 'underscore';
 import * as ES from './ES';
-
 import {
   GraphQLList,
   GraphQLObjectType,
@@ -14,22 +13,24 @@ import {
   GraphQLInterfaceType
 } from 'graphql';
 
+const util = require('util')
+
 
 
 
 //OBJ TYPES Definition
-const charging_speed = new GraphQLEnumType({
+const Charging_speed = new GraphQLEnumType({
   name: 'charging_speed',
   description: 'Speed of the Charging Station',
   values: {
-    FAST: {value: 'fast'},
-    MEDIUM: {value: 'medium'},
-    SLOW: {value: 'slow'}
+    fast: {value: 'fast'},
+    medium: {value: 'medium'},
+    slow: {value: 'slow'}
   }
 });
 
 const User = new GraphQLObjectType({
-  name: 'User',
+  name: 'user',
   description: 'Represent the type of an User',
   fields: () => ({
     _id: {type: GraphQLString},
@@ -39,7 +40,7 @@ const User = new GraphQLObjectType({
 });
 
 const Reservation = new GraphQLObjectType({
-  name: 'Reservation',
+  name: 'reservation',
   description: 'Represent the type of a Reservation',
   fields: () => ({
     _id: {type: GraphQLString},
@@ -54,20 +55,21 @@ const Reservation = new GraphQLObjectType({
 });
 
 var Position = new GraphQLObjectType({
-  name: 'Position',
+  name: 'position',
   fields: {
-    latitude: { type: new GraphQLNonNull(GraphQLFloat) },
-    longitude: { type: new GraphQLNonNull(GraphQLFloat) },
+    lat: { type: new GraphQLNonNull(GraphQLFloat), description: '@type: https://schema.org/latitude' },
+    lon: { type: new GraphQLNonNull(GraphQLFloat), description: '@type: https://schema.org/longitude' },
   }
 });
+
 
 
 const EVChargingStation = new GraphQLObjectType({
   name: 'EVChargingStation',
   description: 'Electric Vehicle Charging Station ObjectType',
   fields: () => ({
-    _id: {type: GraphQLString},
-    charging_speed: {type: charging_speed},
+    c_id: {type: GraphQLString},
+    charging_speed: {type: Charging_speed},
     available: {type: GraphQLBoolean},
     user: {
       type: User,
@@ -105,19 +107,32 @@ const Query = new GraphQLObjectType({
   fields: () => ({
 
 
-    EVChargingStations: {
+     searchByArea: {
       type: new GraphQLList(EVChargingStation),
-      description: 'List of Electric Vehicle Charging Stations',
+      description: 'List of Electric Vehicle Charging Stations with a given radius',
       args: {
-        charging_speed: {type: charging_speed}
+        lat: {type: new GraphQLNonNull(GraphQLFloat), description: '@type: https://schema.org/latitude'  },
+        lon: {type: new GraphQLNonNull(GraphQLFloat), description: '@type: https://schema.org/longitude' },
+        radius: {type: new GraphQLNonNull(GraphQLFloat), description: '@type: https://schema.org/geoRadius' },
+        charging_speed: {type: Charging_speed}
       },
-      resolve: function(source, {charging_speed}) {
-        if (charging_speed){
-          return _.filter(EVChargerStationsList, EVChargingStation => EVChargingStation.charging_speed === charging_speed);
-        } else {
-          console.log(EVChargerStationsList)
-          return _.filter(EVChargerStationsList, EVChargingStation => true);
-        }
+      resolve: function(source, args) {
+
+          return ES.client.search({index: 'ev_chargers', type: 'ev_charger', body: ES.queryByArea(args)}).
+                then(function (resp) {
+                      const hits = resp.hits.hits;
+                      let results = [];
+                      for (let hit of hits){
+                          results.push(hit._source);
+                      } 
+                      console.log("results_searchByArea > " + util.inspect(results, false, null));
+
+                      return results;
+                  
+                  }, function (err) {
+                      console.trace(err.message);
+                      return {status: "error"};
+                  });
       }
     },
 
