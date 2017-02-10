@@ -1,18 +1,22 @@
-********************************************************************************************************
-INDEX CREATION and MAPPING 
-********************************************************************************************************
+//********************************************************************************************************
+//INDEX CREATION and MAPPING 
+//********************************************************************************************************
+DELETE ev_chargers
+
 PUT ev_chargers 
 {
   "mappings": {
     "ev_charger": { 
-      "properties": { 
+      "properties": {
+		"charger_id":	{ "type": "string"  }, 
         "charging_speed": { "type": "keyword"  }, 
         "position": { "type": "geo_point" },
 	 	"available": { "type": "boolean" },
 		"reservations": { "type": "nested",  
 						  "properties": { 
-							    "userID" :    { "type": "string" }, 
-							    "timeslot":   { "type": "date_range", "format": "yyyy-MM-dd HH:mm:ss"} 
+								"reservation_id": { "type": "string" }, 
+							    "user_id" : { "type": "string" }, 
+							    "timeslot": { "type": "date_range", "format": "yyyy-MM-dd HH:mm:ss"} 
 						  }
 						}
       }
@@ -22,16 +26,19 @@ PUT ev_chargers
 
 PUT ev_chargers/ev_charger/1
 {
+  "charger_id": "1",	
   "charging_speed" : "slow",
   "position": { "lat": 41.00,"lon": -71.00 },
   "available": true,
   "reservations" : [
     {
-      "userID" : "andrea.buda@aalto.fi",
+	  "reservation_id": "1.1",	
+      "user_id" : "andrea.buda@aalto.fi",
       "timeslot" :  { "gte" : "2015-10-31 12:00:00",  "lte" : "2015-10-31 13:00:00" }
     },
     {
-      "userID" : "andrea_buda@hotmail.com",
+	  "reservation_id": "1.2",		
+      "user_id" : "andrea_buda@hotmail.com",
       "timeslot" :  { "gte" : "2017-10-31 16:00:00",  "lte" : "2017-10-31 18:00:00" }
     }
   ]
@@ -39,31 +46,34 @@ PUT ev_chargers/ev_charger/1
 
 PUT ev_chargers/ev_charger/2
 {
+  "charger_id": "2",
   "charging_speed" : "fast",
   "position": { "lat": 41.01,"lon": -71.01 },
   "available": true,
   "reservations" : [
     {
-      "userID" : "andrea.buda@aalto.fi",
+	  "reservation_id": "2.1",	
+      "user_id" : "andrea.buda@aalto.fi",
       "timeslot" :  { "gte" : "2015-10-31 12:00:00",  "lte" : "2015-10-31 13:00:00" }
     },
     {
-      "userID" : "andrea_buda@hotmail.com",
+	  "reservation_id": "2.2",	
+      "user_id" : "andrea_buda@hotmail.com",
       "timeslot" :  { "gte" : "2018-10-31 16:00:00",  "lte" : "2018-10-31 18:00:00" }
     }
   ]
 }
 
+GET  ev_chargers/_search
+
+//********************************************************************************************************
+//FILTER TO BE APPLIED to cleanup RESULTS GET /ev_chargers/ev_charger/_search          ?pretty&filter_path=hits.hits._id,hits.hits._source
+//********************************************************************************************************
 
 
-********************************************************************************************************
-FILTER TO BE APPLIED to cleanup RESULTS GET /ev_chargers/ev_charger/_search          ?pretty&filter_path=hits.hits._id,hits.hits._source
-********************************************************************************************************
-
-
-********************************************************************************************************
-SEARCH ALL CHARGER IN A GIVEN AREA
-********************************************************************************************************
+//********************************************************************************************************
+//SEARCH ALL CHARGER IN A GIVEN AREA
+//********************************************************************************************************
 GET /ev_chargers/ev_charger/_search?pretty&filter_path=hits.hits._id,hits.hits._source
 {
 	"_source": {
@@ -86,9 +96,9 @@ GET /ev_chargers/ev_charger/_search?pretty&filter_path=hits.hits._id,hits.hits._
         }
     }
 }
-********************************************************************************************************
-FIND ALL FUTURE RESERVATION for the day (gte: now+1d) for a given _id
-********************************************************************************************************
+//********************************************************************************************************
+//FIND ALL FUTURE RESERVATION for the day (gte: now+1d) for a given _id
+//********************************************************************************************************
 GET /ev_chargers/ev_charger/_search
 {
     "_source": {
@@ -114,9 +124,9 @@ GET /ev_chargers/ev_charger/_search
 
 
 
-********************************************************************************************************
-ADD A NEW RESERVATION
-********************************************************************************************************
+//********************************************************************************************************
+//ADD A NEW RESERVATION
+//********************************************************************************************************
 POST ev_chargers/ev_charger/1/_update
 {
     "script" : {
@@ -131,9 +141,9 @@ POST ev_chargers/ev_charger/1/_update
     }
 }
 
-********************************************************************************************************
-REMOVE ALL OLD REVERVATIONS (cronjob admin)
-********************************************************************************************************
+//********************************************************************************************************
+//REMOVE ALL OLD REVERVATIONS (cronjob admin)
+//********************************************************************************************************
 var query = run FIND ALL FUTURE RESERVATION (gte: now) for a given _id
 var newReservations = jsonParse(query) > getListOf reservations.hits.hits._source 
 POST ev_chargers/ev_charger/1/_update
