@@ -32,7 +32,7 @@ const User = new GraphQLObjectType({
   name: 'user',
   description: 'Represent the type of an User',
   fields: () => ({
-    _id: {type: GraphQLString},
+    user_id: {type: GraphQLString},
     name: {type: GraphQLString},
     email: {type: GraphQLString}
   })
