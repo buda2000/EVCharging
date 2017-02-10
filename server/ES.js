@@ -6,35 +6,19 @@ export const client = new elasticsearch.Client({
   log: 'error'
 });
 
-export let queryByArea = (args) => 
-{
-    return {
-            query: {
-            bool : {
-                must : {
-                    match_all : {}
-                },
-                filter : {
-                    geo_distance : {
-                        distance : args.radius,
-                        position : {
-                            lat : args.lat,
-                            lon : args.lon
-                        }
-                    }
-                }
-            }
-        }
-    }
-};
-
-
-export let searchByArea = (args) => {
+export let searchByArea = (args) => new Promise((resolve, reject) => {
     //TODO >> args.charging_speed
     client.search({
         index: 'ev_chargers',
         type: 'ev_charger',
-        body: queryByArea,
+        body: {query: {
+                      bool : {
+                        must : { match_all : {} },
+                        filter : {
+                            geo_distance : {
+                                distance : args.radius,
+                                position : {lat : args.lat, lon : args.lon}
+              }}}}}
         }).then(function (resp) {
             
             const hits = resp.hits.hits;
@@ -42,15 +26,13 @@ export let searchByArea = (args) => {
             for (let hit of hits){
                 results.push(hit._source);
             } 
-            console.log("results_searchByArea > " + util.inspect(results, false, null));
-
-            return results;
+            resolve(results);
             
         }, function (err) {
-            console.trace(err.message);
-            return {status: "error"};
+            reject( {status: "error"} );
         });
-};
+});
+
 
 
 export let addReservation = (userID, chargerID, startTime, endTime) => {

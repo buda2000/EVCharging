@@ -13,7 +13,6 @@ import {
   GraphQLInterfaceType
 } from 'graphql';
 
-const util = require('util')
 
 
 
@@ -43,14 +42,9 @@ const Reservation = new GraphQLObjectType({
   name: 'reservation',
   description: 'Represent the type of a Reservation',
   fields: () => ({
-    _id: {type: GraphQLString},
-    user: {
-      type: User,
-      resolve: function({user}) {
-        return UsersMap[user];
-      }
-    },
-    timeslot: {type: GraphQLFloat}
+    reservation_id: {type: GraphQLString},
+    user_id : {type: GraphQLString},
+    timeslot: {type: Timeslot}
   })
 });
 
@@ -62,39 +56,25 @@ var Position = new GraphQLObjectType({
   }
 });
 
+var Timeslot = new GraphQLObjectType({
+  name: 'timeslot',
+  fields: {
+    gte: { type: new GraphQLNonNull(GraphQLString), description: '@type: http://schema.org/startTime' },
+    lte: { type: new GraphQLNonNull(GraphQLString), description: '@type: http://schema.org/endTime' },
+  }
+});
+
 
 
 const EVChargingStation = new GraphQLObjectType({
   name: 'EVChargingStation',
   description: 'Electric Vehicle Charging Station ObjectType',
   fields: () => ({
-    c_id: {type: GraphQLString},
+    charger_id: {type: GraphQLString},
     charging_speed: {type: Charging_speed},
     available: {type: GraphQLBoolean},
-    user: {
-      type: User,
-      resolve: function({user}) {
-        return UsersMap[user];
-      }
-    },
-    position: {
-      type: Position,
-      resolve: function({_id}) {
-        return EVChargerStationsList[_id].position;
-      }
-    },
-    reservations: {
-      type: new GraphQLList(Reservation),
-      args: {
-        limit: {type: GraphQLInt, description: 'Limit the Reservations returing'}
-      },
-      resolve: function({_id}, {limit}) {
-        if(limit >= 0) {
-          return EVChargerStationsList[_id].reservations.slice(0, limit);
-        }
-        return EVChargerStationsList[_id].reservations;
-      }
-    }
+    position: {type: Position},
+    reservations: {type: new GraphQLList(Reservation)}
   })
 });
 
@@ -117,22 +97,7 @@ const Query = new GraphQLObjectType({
         charging_speed: {type: Charging_speed}
       },
       resolve: function(source, args) {
-
-          return ES.client.search({index: 'ev_chargers', type: 'ev_charger', body: ES.queryByArea(args)}).
-                then(function (resp) {
-                      const hits = resp.hits.hits;
-                      let results = [];
-                      for (let hit of hits){
-                          results.push(hit._source);
-                      } 
-                      console.log("results_searchByArea > " + util.inspect(results, false, null));
-
-                      return results;
-                  
-                  }, function (err) {
-                      console.trace(err.message);
-                      return {status: "error"};
-                  });
+          return ES.searchByArea(args);
       }
     },
 
