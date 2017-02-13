@@ -34,7 +34,13 @@ query
   }
 }
 
+mutation {
+  addReservation(user_id: "TEST@TEST.it", charger_id: "1", gte: "2015-10-31 16:00:00", lte: "2015-10-31 18:00:00") {
+    reservation_id
+  }
+}
+
 
 <h2>TODO</h2>
-addReservation -> Mutation
+
 

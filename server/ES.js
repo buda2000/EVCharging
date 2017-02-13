@@ -3,7 +3,7 @@ const util = require('util')
 const elasticsearch = require('elasticsearch');
 export const client = new elasticsearch.Client({
   host: 'localhost:9200',
-  log: 'error'
+  log: 'trace'
 });
 
 export let searchByArea = (args) => new Promise((resolve, reject) => {
@@ -34,43 +34,29 @@ export let searchByArea = (args) => new Promise((resolve, reject) => {
 });
 
 
+export let addReservation = (args) => new Promise((resolve, reject) => {
 
-export let addReservation = (userID, chargerID, startTime, endTime) => {
-
-    client.search({
+    const rid = 'rid-' + Math.ceil(Math.random() * 99999999)
+    client.update({
         index: 'ev_chargers',
         type: 'ev_charger',
+        id: '1',
         body: {
-                query: {
-                    bool : {
-                        must : {
-                            match_all : {}
-                        },
-                        filter : {
-                            geo_distance : {
-                                distance : 11200,
-                                position : {
-                                    lat : 41,
-                                    lon : -71
-                                }
-                            }
-                        }
+            "script" : {
+                    "inline": "ctx._source.reservations.add(params.reservation)",
+                    "lang": "painless",
+                    "params" : {
+                        "reservation" : {
+                                        "reservation_id": rid,
+                                        "user_id" : args.user_id,
+                                        "timeslot" :  { "gte" : args.gte,  "lte" : args.lte}
+                                        }
                     }
                 }
         }
         }).then(function (resp) {
-            const hits = resp.hits.hits._source;
-            console.log("Result: " + hits);
-            let results = [];
-            for (let hit of hits) 
-                results.push(hit);
-            
-            return results;
-            
-
+            resolve( {reservation_id: rid});
         }, function (err) {
-            console.trace(err.message);
+            reject( {status: "error"} );
         });
-};
-
-
+});

@@ -129,19 +129,13 @@ const Mutation = new GraphQLObjectType({
     addReservation: {
       type: Reservation,
       args: {
-        userID: {type: new GraphQLNonNull(GraphQLString)},
-        chargerID: {type: new GraphQLNonNull(GraphQLString)},
-        startTime: {type: new GraphQLNonNull(GraphQLString)},
-        endTime: {type: new GraphQLNonNull(GraphQLString)}
+        user_id: {type: new GraphQLNonNull(GraphQLString)},
+        charger_id: {type: new GraphQLNonNull(GraphQLString)},
+        gte: {type: new GraphQLNonNull(GraphQLString),  description: '@type: http://schema.org/startTime'},
+        lte: {type: new GraphQLNonNull(GraphQLString),  description: '@type: https://schema.org/endTime'}
       },
       resolve: function(rootValue, args) {
-
-          let reservationID = ES.addReservation(args.userID, args.chargerID, args.startTime, args.endTime)
-            
-          if(reservationID != -1)
-            return {_id: "ack"}
-          else
-            return {_id : "error", reason: "Reservation Not Placed - Check your request parameters"}
+          return ES.addReservation(args);
       }
     }
   }
